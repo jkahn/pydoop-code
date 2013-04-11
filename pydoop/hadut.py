@@ -254,6 +254,7 @@ def run_class(class_name, args=None, properties=None, classpath=None,
   return res
 
 
+GLOB_CHARS = ('*', '{', '}', ',', '[', ']')
 def run_pipes(executable, input_path, output_path, more_args=None,
               properties=None, force_pydoop_submitter=False,
               hadoop_conf_dir=None, logger=None):
@@ -275,9 +276,16 @@ def run_pipes(executable, input_path, output_path, more_args=None,
   """
   if logger is None:
     logger = utils.NullLogger()
-  for n, p in ("executable", executable), ("input path", input_path):
-    if not hdfs.path.exists(p):
-      raise IOError("%s not found" % n)
+  if not hdfs.path.exists(executable):
+    raise IOError("executable %s not found" % executable)
+  # input path may be a glob. DO NOT FAIL OUT IF NOT PRESENT
+  if not hdfs.path.exists(input_path):
+    if any(c in input_path for c in GLOB_CHARS):
+      # path has a glob character; there's probably nothing wrong
+      pass
+    else:
+      # looks like trouble
+      raise IOError("glob-less input path %s not found on HDFS" % input_path)
   if properties is None:
     properties = {}
   properties.setdefault('hadoop.pipes.java.recordreader', 'true')
