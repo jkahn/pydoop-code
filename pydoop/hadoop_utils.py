@@ -63,7 +63,7 @@ class HadoopVersion(object):
   """
   def __init__(self, version_str):
     self.__str = version_str
-    version = self.__str.split("-", 1)
+    version = re.split(r"[-+]", self.__str, maxsplit=1)
     try:
       self.main = tuple(map(int, version[0].split(".")))
     except ValueError:
